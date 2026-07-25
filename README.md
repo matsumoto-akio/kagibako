@@ -18,16 +18,15 @@
 
 ## 使い方
 
-### アプリ
+### アプリ（こちらがおすすめです）
 
-```bash
-git clone https://github.com/<your-account>/kagibako.git
-cd kagibako
-./scripts/build_app.sh
-open ".build/カギバコ.app"
-```
+1. [Releases](https://github.com/matsumoto-akio/kagibako/releases) から `Kagibako-x.y.z.dmg` をダウンロード
+2. 開いて「カギバコ」をアプリケーションフォルダにドラッグ
+3. 起動して「このMacを調べる」を押す
 
-「このMacを調べる」を押すだけです。1〜3分で終わります。
+1〜3分で終わります。ターミナルは使いません。
+
+Apple の公証(notarization)済みなので、「開発元が未確認のため開けません」の警告は出ません。
 
 ### コマンドライン
 
@@ -89,6 +88,29 @@ macOS 13 以降 / Swift 5.9 以降
 ```bash
 swift build
 swift test
+./scripts/build_app.sh      # .build/カギバコ.app を作る(開発用のアドホック署名)
+./scripts/make_icns.sh      # アイコンを作り直す
+```
+
+### 配布
+
+```bash
+./scripts/release.sh 0.1.0
+```
+
+ビルド → Developer ID 署名(Hardened Runtime) → DMG → 公証 → staple →
+GitHub Release 公開まで一本で通します。公開の直前に確認を求めます。
+
+公証まででいったん止めるには `SKIP_PUBLISH=1 ./scripts/release.sh 0.1.0`。
+
+必要なもの:
+
+- Apple Developer Program の `Developer ID Application` 証明書(キーチェーンに導入済みであること)
+- notarytool のキーチェーンプロファイル `AC_NOTARY`
+
+```bash
+xcrun notarytool store-credentials "AC_NOTARY" \
+  --apple-id <Apple ID> --team-id <Team ID> --password <App用パスワード>
 ```
 
 ## ライセンス
