@@ -1,0 +1,15 @@
+# SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+*.xcodeproj
+DerivedData/
+
+# スキャン結果は絶対にコミットしない(実在するキーの所在情報を含むため)
+scan-result*
+*.scan.txt
+report*.txt
+findings*.json
+
+# macOS
+.DS_Store
