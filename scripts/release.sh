@@ -125,6 +125,17 @@ if ! gh repo view "$release_repo" >/dev/null 2>&1; then
     echo "リポジトリ作成後に再実行してください。" >&2
     exit 1
 fi
+# private のまま Release を作ると、成功したように見えて誰もダウンロードできない。
+# rimlight で「公開したつもりが非公開リポジトリだった」事故が起きているため、
+# 公開状態を明示的に確認する。
+repo_visibility="$(gh repo view "$release_repo" --json visibility --jq .visibility)"
+if [ "$repo_visibility" != "PUBLIC" ]; then
+    echo "ERROR: $release_repo は $repo_visibility です。このままReleaseを作っても誰もダウンロードできません。" >&2
+    echo "配布を始めるなら、先に公開へ切り替えてください:" >&2
+    echo "  gh repo edit $release_repo --visibility public --accept-visibility-change-consequences" >&2
+    echo "公証済みDMGは $dmg_path に残っています。" >&2
+    exit 1
+fi
 printf 'v%s を %s (公開リポジトリ) へ公開します。よろしいですか？ [y/N]: ' \
     "$version" "$release_repo"
 read -r confirm_publish
