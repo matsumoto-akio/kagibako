@@ -162,6 +162,23 @@ struct ReferenceSection: View {
     }
 }
 
+/// 「再発行が安全です」だけだと、先に古いキーを止めて動いているものを壊す人が出る。
+/// 何を先にやるかが分かる形で出す。
+struct ReissueOrderNote: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Label("キーを作り直すときは、この順番で行ってください。", systemImage: "arrow.clockwise")
+            ForEach(Array(Remediation.reissueOrder.enumerated()), id: \.offset) { index, step in
+                Text("\(index + 1). \(step)")
+                    .padding(.leading, 20)
+            }
+            Text("※ \(Remediation.reissueOrderCaution)")
+                .padding(.leading, 20)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
 struct NotesSection: View {
     let result: ScanResult
     let trashFailure: String?
@@ -169,7 +186,7 @@ struct NotesSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if !result.isClean {
-                Label("直す前に、まず発行元でキーを再発行するのが安全です。", systemImage: "arrow.clockwise")
+                ReissueOrderNote()
                 Label(
                     "このアプリはファイルを書き換えません。手順を見せるところまでです(再生成されるキャッシュのみ、ゴミ箱に移せます)。",
                     systemImage: "hand.raised"

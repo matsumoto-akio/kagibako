@@ -148,12 +148,72 @@ final class RemediationTests: XCTestCase {
         XCTAssertTrue(Remediation.neverShowNote.contains("GitHub"))
     }
 
-    /// そもそも書く必要がない人が多い。金庫より先に「消すだけ」を出す。
+    /// そもそも書く必要がない人が多い。金庫より先にログイン確認を出す。
+    /// ただし「消すだけで終わり」が成り立つのは公式ログインを持つツールだけなので、
+    /// どのツールのファイルか分からない人には、消させない。
     func test_easiestOptionComesFirst() {
         for kind in [LocationKind.shellConfig, .globalToolConfig] {
             let first = Remediation.guidance(for: kind).steps.first ?? ""
             XCTAssertTrue(first.contains("ログイン"), "\(kind) の最初の手順がログイン確認になっていません")
-            XCTAssertTrue(first.contains("消すだけ"), "\(kind) の最初の手順に「消すだけ」がありません")
+            XCTAssertTrue(
+                first.contains("分からない場合は消さないでください"),
+                "\(kind) の最初の手順に「分からない場合は消さない」がありません"
+            )
+        }
+    }
+
+    /// 別のツールの設定ファイルを「消すだけで終わり」と言うと、そのツールが動かなくなる。
+    func test_deletionIsConditionalOnKnowingTheTool() {
+        for kind in [LocationKind.shellConfig, .globalToolConfig] {
+            let text = Remediation.guidance(for: kind).steps.joined()
+            XCTAssertTrue(
+                text.contains("そうでないツールは、キーを消すと動かなくなります"),
+                "\(kind) が、消すと動かなくなる場合を伝えていません"
+            )
+        }
+    }
+
+    /// .env を読むだけのツールが大半で、キーチェーンに自動で移すツールは少ない。
+    /// 「多くのツールがしまい直す」は事実として正確でない。
+    func test_globalToolConfigDoesNotClaimAutomaticKeychainStorage() {
+        let text = Remediation.guidance(for: .globalToolConfig).steps.joined()
+        XCTAssertFalse(text.contains("自動でしまい直"), "キーチェーンへの自動保存を断定しています")
+        XCTAssertTrue(text.contains("公式のログインがあるツールは"))
+    }
+
+    /// 手順どおりにやって壊した人が戻せないと、次から誰も手順に従わない。
+    func test_editingStepsAskForABackupFirst() {
+        for kind in [LocationKind.shellConfig, .globalToolConfig] {
+            let steps = Remediation.guidance(for: kind).steps
+            let backupIndex = steps.firstIndex { $0.contains("コピーして別の場所") }
+            XCTAssertNotNil(backupIndex, "\(kind) にバックアップの案内がありません")
+            let editIndex = steps.firstIndex { $0.contains("削除") }
+            if let backupIndex, let editIndex {
+                XCTAssertLessThan(backupIndex, editIndex, "\(kind) のバックアップ案内が編集手順より後にあります")
+            }
+        }
+    }
+
+    /// 先に古いキーを止めると、動いているものが止まる。順番を番号で見せる。
+    func test_reissueOrderPutsRevocationLast() {
+        XCTAssertEqual(Remediation.reissueOrder.count, 3)
+        XCTAssertTrue(Remediation.reissueOrder[0].contains("発行"))
+        XCTAssertTrue(Remediation.reissueOrder[1].contains("差し替え"))
+        XCTAssertTrue(Remediation.reissueOrder[2].contains("失効"))
+        XCTAssertTrue(Remediation.reissueOrderCaution.contains("先に古いキーを止めると"))
+    }
+
+    /// 「詳しい人向け」の見出しを出しておいて中身が空だと、壊れた画面に見える。
+    func test_everyKindHasAtLeastOneCommand() {
+        for kind in LocationKind.allCases {
+            let commands = Remediation.guidance(for: kind, path: "/Users/x/proj/.env").commands
+            XCTAssertFalse(commands.isEmpty, "\(kind) にコマンドがありません")
+            for command in commands {
+                XCTAssertFalse(
+                    command.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                    "\(kind) に空のコマンドが混ざっています"
+                )
+            }
         }
     }
 

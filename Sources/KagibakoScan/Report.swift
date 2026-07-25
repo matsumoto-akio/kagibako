@@ -90,6 +90,11 @@ public enum Report {
 
     private static let referenceFileLimit = 20
 
+    private static let reissueOrderLines = Remediation.reissueOrder
+        .enumerated()
+        .map { "\($0.offset + 1). \($0.element)" }
+        .joined(separator: "\n")
+
     private static func footer(_ realCount: Int) -> String {
         guard realCount > 0 else {
             return """
@@ -102,7 +107,10 @@ public enum Report {
         return """
         ───────────────────────────────────────────
         値そのものは表示していません(この出力を人に見せても安全です)。
-        該当ファイルを直す前に、まず発行元でキーを再発行するのが安全です。
+
+        キーを作り直すときは、この順番で行ってください。
+        \(reissueOrderLines)
+        ※ \(Remediation.reissueOrderCaution)
 
         \(Remediation.neverShowNote)
 

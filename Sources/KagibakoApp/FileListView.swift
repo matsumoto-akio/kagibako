@@ -105,8 +105,9 @@ struct FileListView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if !guidance.commands.isEmpty {
-                expertCommands(guidance.commands, path: group.path)
+            let commands = guidance.commands.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            if !commands.isEmpty {
+                expertCommands(commands, path: group.path)
             }
 
             if let caution = guidance.caution {
@@ -126,19 +127,32 @@ struct FileListView: View {
     }
 
     /// コマンドは最後の手段。読めない人が手順の途中で止まらないよう、畳んでおく。
+    ///
+    /// DisclosureGroup の入れ子(ファイル行の中のコマンド欄)は List の中で
+    /// 中身が描画されないことがあり、「開いても何も出ない」状態になっていた。
+    /// 自前の開閉ボタンにして、中身を同じ VStack に並べる形にする。
     private func expertCommands(_ commands: [String], path: String) -> some View {
-        DisclosureGroup(isExpanded: commandExpansion(of: path)) {
-            VStack(alignment: .leading, spacing: 6) {
+        let isExpanded = expandedCommandPaths.contains(path)
+        return VStack(alignment: .leading, spacing: 6) {
+            Button {
+                toggleCommands(of: path)
+            } label: {
+                Label(
+                    "詳しい人向け(ターミナルのコマンド) \(commands.count)件",
+                    systemImage: isExpanded ? "chevron.down" : "chevron.right"
+                )
+                .font(AppFont.small)
+                .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
                 ForEach(Array(commands.enumerated()), id: \.offset) { _, command in
                     commandRow(command)
                 }
             }
-            .padding(.top, 4)
-        } label: {
-            Label("詳しい人向け(ターミナルのコマンド)", systemImage: "terminal")
-                .font(AppFont.small)
-                .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func commandRow(_ command: String) -> some View {
@@ -172,17 +186,12 @@ struct FileListView: View {
         )
     }
 
-    private func commandExpansion(of path: String) -> Binding<Bool> {
-        Binding(
-            get: { expandedCommandPaths.contains(path) },
-            set: { isExpanded in
-                if isExpanded {
-                    expandedCommandPaths.insert(path)
-                } else {
-                    expandedCommandPaths.remove(path)
-                }
-            }
-        )
+    private func toggleCommands(of path: String) {
+        if expandedCommandPaths.contains(path) {
+            expandedCommandPaths.remove(path)
+        } else {
+            expandedCommandPaths.insert(path)
+        }
     }
 
     private func copy(_ text: String) {

@@ -52,12 +52,30 @@ public enum Remediation {
         + "直すのはあなたの手で、1つずつ確認しながら進めてください。"
         + "全部を一度に直す必要はありません。まず「いますぐ対処」の分だけで、リスクの大半は減ります。"
 
-    /// 多くの人は、そもそもキーを書く必要がない。金庫に移す話より先にこれを出す。
-    private static let tryLoginFirst =
-        "まず確認してください。Claude Code や Codex は、公式のログインだけで使えます。"
-        + "その場合、書いてあるキーは消すだけで終わりです。"
-        + "消したあとターミナルを開き直して、いつも通り使えれば大丈夫です。"
-        + "これが一番かんたんで、一番安全です。"
+    /// 直す順番。先に古いキーを止めると、動いているものが止まる。
+    public static let reissueOrder = [
+        "新しいキーを発行する",
+        "使っている場所を全部、新しいキーに差し替える",
+        "最後に、古いキーを失効させる",
+    ]
+
+    /// 順番を間違えたときに何が起きるか。番号だけ出しても伝わらない。
+    public static let reissueOrderCaution = "先に古いキーを止めると、動いているものが止まります。"
+
+    /// 「消すだけで終わり」は、公式ログインを持つツールにしか当てはまらない。
+    /// どのツールのファイルか分からないまま消させると、そのツールが動かなくなる。
+    private static let identifyToolFirst =
+        "まず、このファイルがどのツールのものか確認してください。"
+        + "Claude Code や Codex のように公式のログインがあるツールなら、"
+        + "キーを消してログインし直すだけで済みます。"
+        + "そうでないツールは、キーを消すと動かなくなります。"
+        + "分からない場合は消さないでください。"
+
+    /// 手順どおりにやっても戻せなくなる人が出る。編集の前に必ず退避させる。
+    private static let backupFirst =
+        "編集する前に、そのファイルをコピーして別の場所に置いておいてください。"
+        + "うまくいかなかったときに戻せます。"
+        + "そのコピーにもキーが書かれています。うまくいったら、コピーの方も消してください。"
 
     public static func guidance(for kind: LocationKind, path: String? = nil) -> Guidance {
         let file = path ?? "<このファイル>"
@@ -78,7 +96,7 @@ public enum Remediation {
         case .projectEnv:
             return projectEnvGuidance(directory: directory, name: name)
         case .other:
-            return otherGuidance(file: file)
+            return otherGuidance(file: file, directory: directory, name: name)
         }
     }
 
@@ -109,7 +127,8 @@ public enum Remediation {
                 + "ターミナルを開くたびに読み込まれ、Codex が自動で作るコピーにも毎回書き写されます。"
                 + "キーが知らないうちに増えていく元が、ここです。",
             steps: [
-                tryLoginFirst,
+                identifyToolFirst,
+                backupFirst,
                 "消すのは、\(file) の中の「キーを書いた1行」です。"
                     + "`export ANTHROPIC_API_KEY=sk-ant-...` のように書かれている行を、まるごと削除します。",
                 "消したら困った(ツールが動かなくなった)場合だけ、次に進んでください。"
@@ -122,11 +141,13 @@ public enum Remediation {
                 "正直に書いておくと、金庫に預けても、ファイルに置きっぱなしにするのをやめられるだけです。"
                     + "動いているプログラム(実行中のプロセス)にはキーが渡るので、"
                     + "そこから読まれるのは防げません。",
-                "最後に、キーを配っているサイトでキーを再発行(新しいキーを作り直すこと)し、"
-                    + "古いキーを失効(使えなくすること)させてください。"
-                    + "順番が大事です。先に古いキーを止めると、いま動いているものが止まります。",
+                "最後に、キーを配っているサイトでキーを再発行(新しいキーを作り直すこと)します。"
+                    + "順番が大事です。1. 新しいキーを発行する → 2. 使っている場所を全部、新しいキーに差し替える"
+                    + " → 3. 最後に、古いキーを失効(使えなくすること)させる、の順です。"
+                    + "\(reissueOrderCaution)",
             ],
             commands: [
+                "cp \"\(file)\" \"\(file).bak\"",
                 "security add-generic-password -a \"$USER\" -s ANTHROPIC_API_KEY -w",
                 "security find-generic-password -a \"$USER\" -s ANTHROPIC_API_KEY -w",
             ],
@@ -142,15 +163,19 @@ public enum Remediation {
             reason: "ツール全体の設定ファイルです。どのフォルダで作業しても読み込まれるので、"
                 + "書いたまま忘れられやすい場所です。",
             steps: [
-                tryLoginFirst,
+                identifyToolFirst,
+                backupFirst,
                 "\(file) をテキストエディタで開き、キーが書かれている項目を削除して保存します。",
                 "そのあと、ツールをもう一度開いてログインし直してください。"
-                    + "多くのツールは、キーチェーン(Macに最初から入っている、パスワードをしまう金庫)に自動でしまい直します。",
+                    + "公式のログインがあるツールは、ログインし直すと安全な場所に保存されます。",
                 "設定ファイルに直接書く方式しかないツールもあります。"
                     + "その場合は、そのファイルを自分だけが読める設定にするところまでが現実的な対処です"
                     + "(下の「詳しい人向け」のコマンド)。",
             ],
-            commands: ["chmod 600 \"\(file)\""]
+            commands: [
+                "cp \"\(file)\" \"\(file).bak\"",
+                "chmod 600 \"\(file)\"",
+            ]
         )
     }
 
@@ -209,7 +234,7 @@ public enum Remediation {
         )
     }
 
-    private static func otherGuidance(file: String) -> Guidance {
+    private static func otherGuidance(file: String, directory: String, name: String) -> Guidance {
         Guidance(
             title: "中身を見て判断してください",
             steps: [
@@ -217,6 +242,12 @@ public enum Remediation {
                     + "実際に使っているキーが書かれているのか確かめてください。",
                 "説明用の見本の値が書かれているだけのこともあります。"
                     + "その場合は、何もしなくて大丈夫です。",
+                "本物のキーだった場合は、そのファイルが GitHub に上がらない設定になっているかを確認し、"
+                    + "自分だけが読める設定にしてください(下の「詳しい人向け」のコマンド)。",
+            ],
+            commands: [
+                "git -C \"\(directory)\" check-ignore -v \"\(name)\"",
+                "chmod 600 \"\(file)\"",
             ]
         )
     }
