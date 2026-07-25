@@ -29,6 +29,18 @@ public extension ScanSummary {
     var suspiciousFindings: [Finding] {
         findings.filter { $0.confidence == .low }
     }
+
+    /// 「本物」枠を、置かれている場所の性格から危険度で分ける。
+    ///
+    /// 分けるのは本物枠の中だけ。テスト用と誤検出は参考枠のまま動かさない。
+    /// 全部を1つの山にすると、勝手に増えるシェル設定と、
+    /// 通常の運用であるプロジェクトの .env が同じ重さに見えてしまう。
+    func realFindings(
+        risk: Risk,
+        home: String = FileManager.default.homeDirectoryForCurrentUser.path
+    ) -> [Finding] {
+        realFindings.filter { LocationKind.of(path: $0.path, home: home).risk == risk }
+    }
 }
 
 /// ディレクトリを走査して Detector に食わせる層。

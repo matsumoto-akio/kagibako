@@ -64,6 +64,31 @@ final class ScanViewModel: ObservableObject {
         phase = .idle
     }
 
+    /// ゴミ箱へ移せたファイル。移した後も一覧からは消さず、印だけ付ける
+    /// (「何をしたか」が画面に残っていないと、やり直しの判断ができない)。
+    @Published private(set) var trashedPaths: Set<String> = []
+    @Published private(set) var trashFailure: String?
+
+    /// このアプリが唯一ファイルに触る操作。対象は再生成されるキャッシュだけに限る。
+    ///
+    /// 削除ではなくゴミ箱へ移す。取り消せる形にしておかないと、
+    /// 判断を間違えたときに戻せない。
+    func moveToTrash(_ path: String) {
+        // ボタンを出す条件とは別に、実行の直前でもう一度確かめる。
+        // ここが緩むと、ユーザーの .zshrc を消すツールになる。
+        guard LocationKind.isTrashable(path: path) else {
+            trashFailure = "このファイルは自動削除の対象外です。"
+            return
+        }
+        do {
+            try FileManager.default.trashItem(at: URL(fileURLWithPath: path), resultingItemURL: nil)
+            trashedPaths.insert(path)
+            trashFailure = nil
+        } catch {
+            trashFailure = "ゴミ箱に移せませんでした: \(error.localizedDescription)"
+        }
+    }
+
     /// マスク済みのテキスト。値は含まれないので、そのまま人に見せられる。
     func reportText() -> String? {
         guard let summary = lastSummary else { return nil }

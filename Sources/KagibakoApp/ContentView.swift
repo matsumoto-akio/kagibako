@@ -18,8 +18,11 @@ struct ContentView: View {
                 if let result = viewModel.result {
                     ResultView(
                         result: result,
+                        trashedPaths: viewModel.trashedPaths,
+                        trashFailure: viewModel.trashFailure,
                         onCopy: { copyToPasteboard(viewModel.reportText()) },
-                        onRescan: viewModel.start
+                        onRescan: viewModel.start,
+                        onTrash: viewModel.moveToTrash
                     )
                 } else {
                     IdleView(onStart: viewModel.start)

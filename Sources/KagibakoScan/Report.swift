@@ -11,6 +11,8 @@ public enum Report {
         let test = summary.testFindings
         let suspicious = summary.suspiciousFindings
 
+        let actNow = summary.realFindings(risk: .actNow)
+
         let header = """
         ═══════════════════════════════════════════
           カギバコ 平文APIキー棚卸し
@@ -18,7 +20,8 @@ public enum Report {
         対象        : \(rootPath)
         走査ファイル: \(summary.scannedFileCount) 件(読めず\(summary.unreadableFileCount)件)
 
-        ■ 本物の可能性が高い : \(real.count) 件 / \(fileCount(real)) ファイル
+        ■ いますぐ対処      : \(actNow.count) 件 / \(fileCount(actNow)) ファイル
+          (本物の可能性が高い検出は全部で \(real.count) 件 / \(fileCount(real)) ファイル)
         ── 以下は参考 ──────────────────────────────
         ■ テスト用・サンプル : \(test.count) 件 / \(fileCount(test)) ファイル
         ■ 誤検出の可能性が高い: \(suspicious.count) 件 / \(fileCount(suspicious)) ファイル
@@ -27,7 +30,7 @@ public enum Report {
         let sections = [
             header,
             byKindSection(real),
-            fileSection(real),
+            riskSections(summary),
             referenceSection("【参考: テスト用・サンプルの可能性が高い】", test),
             referenceSection("【参考: 誤検出の可能性が高い(変数名からの推定のみ)】", suspicious),
             footer(real.count),
@@ -48,16 +51,27 @@ public enum Report {
         return (["【種類ごと】"] + rows).joined(separator: "\n")
     }
 
-    private static func fileSection(_ findings: [Finding]) -> String {
+    /// 場所を危険度の高い順に並べる。フラットな一覧では、どれから手を付けるか決められない。
+    private static func riskSections(_ summary: ScanSummary) -> String {
+        let sections = Risk.allCases.compactMap { risk -> String? in
+            let findings = summary.realFindings(risk: risk)
+            guard !findings.isEmpty else { return nil }
+            return fileSection("【\(risk.label)】", findings)
+        }
+        return sections.joined(separator: "\n\n")
+    }
+
+    private static func fileSection(_ title: String, _ findings: [Finding]) -> String {
         guard !findings.isEmpty else { return "" }
         let byFile = Dictionary(grouping: findings, by: { $0.path })
             .map { (path: $0.key, items: $0.value) }
             .sorted { $0.items.count > $1.items.count }
         let rows = byFile.flatMap { entry -> [String] in
             let lines = entry.items.map { "      L\($0.lineNumber)  \($0.kind)  \($0.masked)" }
-            return ["  \(entry.path)"] + lines
+            let guidance = Remediation.guidance(for: LocationKind.of(path: entry.path), path: entry.path)
+            return ["  \(entry.path)"] + lines + ["      → \(guidance.title)"]
         }
-        return (["【場所】"] + rows).joined(separator: "\n")
+        return ([title] + rows).joined(separator: "\n")
     }
 
     /// 参考枠はファイル単位の件数だけにする。主役の数字を埋もれさせないため。
