@@ -105,4 +105,34 @@ final class RemediationTests: XCTestCase {
         let commands = Remediation.guidance(for: .projectEnv).commands.joined(separator: "\n")
         XCTAssertTrue(commands.contains("check-ignore"))
     }
+
+    /// 「なぜ危ないか」を言わずに手順だけ出すと、後回しにされる。
+    func test_actNowKindsExplainWhyItIsDangerous() {
+        for kind in [LocationKind.shellSnapshot, .shellConfig, .globalToolConfig] {
+            let reason = Remediation.guidance(for: kind).reason
+            XCTAssertNotNil(reason, "\(kind) に「なぜ危ないか」がありません")
+            XCTAssertFalse(reason?.isEmpty ?? true)
+        }
+    }
+
+    /// 先に失効させると動いているものが止まる。順番を書かないと事故になる。
+    func test_shellConfigGuidanceReissuesKeyLast() {
+        let steps = Remediation.guidance(for: .shellConfig).steps
+        let last = steps.last ?? ""
+        XCTAssertTrue(last.contains("失効") || last.contains("再発行"))
+        XCTAssertTrue(steps.joined().contains("順番"))
+    }
+
+    /// find-generic-password を .zshrc に書くと、結局スナップショットに載る。
+    func test_shellConfigGuidanceWarnsAgainstExportingEveryTime() {
+        let caution = Remediation.guidance(for: .shellConfig).caution ?? ""
+        XCTAssertTrue(caution.contains("export"))
+        XCTAssertTrue(caution.contains("スナップショット"))
+    }
+
+    /// 全部を一度に直させようとすると手が止まる。
+    func test_closingNoteLimitsWhatTheAppClaims() {
+        XCTAssertTrue(Remediation.closingNote.contains("場所を教える"))
+        XCTAssertTrue(Remediation.closingNote.contains("いますぐ対処"))
+    }
 }

@@ -128,6 +128,13 @@ struct ResultView: View {
             Text(guidance.title)
                 .font(.callout.bold())
 
+            if let reason = guidance.reason {
+                Text("なぜ危ないか: \(reason)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             ForEach(Array(guidance.steps.enumerated()), id: \.offset) { index, step in
                 Text("\(index + 1). \(step)")
                     .font(.caption)
@@ -223,6 +230,7 @@ struct ResultView: View {
                     "このアプリはファイルを書き換えません。手順を見せるところまでです(再生成されるキャッシュのみ、ゴミ箱に移せます)。",
                     systemImage: "hand.raised"
                 )
+                Label(Remediation.closingNote, systemImage: "hand.wave")
             }
             if let trashFailure {
                 Label(trashFailure, systemImage: "exclamationmark.triangle")
