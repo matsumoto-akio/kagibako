@@ -49,7 +49,10 @@ public struct SecretPattern: Sendable {
 
     private static let definitions: [(kind: String, confidence: Confidence, expression: String)] = [
         ("Anthropic", .high, wordStart + "sk-ant-[A-Za-z0-9_-]{20,}"),
-        ("OpenAI", .high, wordStart + "sk-(?!ant-)(?:proj-)?[A-Za-z0-9_-]{20,}"),
+        // sk- で始まる他社キーは OpenAI より先に判定する。
+        // 発行元を取り違えると、利用者が止めるべきサービスを間違える。
+        ("OpenRouter", .high, wordStart + "sk-or-v1-[A-Za-z0-9]{20,}"),
+        ("OpenAI", .high, wordStart + "sk-(?!ant-|or-v1-)(?:proj-)?[A-Za-z0-9_-]{20,}"),
         ("Google", .high, wordStart + "AIza[0-9A-Za-z_-]{35}"),
         ("GitHub", .high, wordStart + "gh[pousr]_[A-Za-z0-9]{36,}"),
         ("GitHub(PAT)", .high, wordStart + "github_pat_[A-Za-z0-9_]{50,}"),

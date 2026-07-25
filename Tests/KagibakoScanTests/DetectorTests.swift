@@ -109,6 +109,33 @@ final class DetectorTests: XCTestCase {
         XCTAssertEqual(findings.count, 2)
     }
 
+    /// `sk-or-v1-` は OpenRouter のキー。OpenAI と表示すると、利用者が
+    /// 止めるべきサービスを間違える。種類名の誤りは検出漏れと同じくらい信用を削る。
+    func test_labelsOpenRouterKeyAsOpenRouter() throws {
+        // Arrange
+        let detector = try makeDetector()
+        let text = "OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+        // Act
+        let findings = detector.scan(text: text, path: "/tmp/.env")
+
+        // Assert
+        XCTAssertEqual(findings.count, 1)
+        XCTAssertEqual(findings.first?.kind, "OpenRouter")
+    }
+
+    func test_stillLabelsGenuineOpenAIKeyAsOpenAI() throws {
+        // Arrange
+        let detector = try makeDetector()
+        let text = "OPENAI_API_KEY=sk-proj-AbCdEfGhIjKlMnOpQrStUvWx0123"
+
+        // Act
+        let findings = detector.scan(text: text, path: "/tmp/.env")
+
+        // Assert
+        XCTAssertEqual(findings.first?.kind, "OpenAI")
+    }
+
     func test_prefersHighConfidenceOverGenericOnSameLine() throws {
         // Arrange
         let detector = try makeDetector()
