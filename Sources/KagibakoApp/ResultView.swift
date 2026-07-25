@@ -12,10 +12,14 @@ struct ResultView: View {
     @State private var isShowingTestFiles = false
     @State private var expandedPaths: Set<String> = []
     @State private var trashCandidate: String?
+    @State private var didExpandFirstFile = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             headline
+            if result.actNowFindingCount > 0 {
+                todoSummary
+            }
             if !result.isClean {
                 kindSummary
                 fileList
@@ -59,6 +63,35 @@ struct ResultView: View {
         }
     }
 
+    /// 件数だけ出して手順をファイルの中に隠すと、次に何をすればいいか分からない。
+    /// 全体の答えは常に見えている状態にする。
+    private var todoSummary: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("やることは3つです")
+                .font(.callout.bold())
+            todoStep(1, "スナップショットをゴミ箱に入れる(このアプリのボタンから)")
+            todoStep(2, ".zshrc の export を消して、キーチェーンに移す")
+            todoStep(3, "プロジェクトの .env は .gitignore に入っているか確認する")
+            Text("※ ファイルごとの詳しい手順は、各ファイルを開くと出ます")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func todoStep(_ number: Int, _ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text("\(number).")
+                .font(.callout.monospacedDigit())
+                .foregroundStyle(.secondary)
+            Text(text)
+                .font(.callout)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     private var kindSummary: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -92,6 +125,14 @@ struct ResultView: View {
             }
         }
         .frame(minHeight: 260)
+        .onAppear(perform: expandFirstActNowFile)
+    }
+
+    /// 一番上の1件だけ開いておく。手順が畳まれた中にあることに気づけないため。
+    private func expandFirstActNowFile() {
+        guard !didExpandFirstFile, let path = result.firstActNowPath else { return }
+        didExpandFirstFile = true
+        expandedPaths.insert(path)
     }
 
     private func fileRow(_ group: ScanResult.FileGroup) -> some View {

@@ -55,6 +55,9 @@ struct ScanResult {
     var actNowFindingCount: Int { layer(.actNow)?.findingCount ?? 0 }
     var actNowFileCount: Int { layer(.actNow)?.fileCount ?? 0 }
 
+    /// 最初から開いておくファイル。手順がそこにあることを、一目で分かるようにするため。
+    var firstActNowPath: String? { layer(.actNow)?.groups.first?.path }
+
     var testFindingCount: Int { testGroups.reduce(0) { $0 + $1.findings.count } }
     var testFileCount: Int { testGroups.count }
 
