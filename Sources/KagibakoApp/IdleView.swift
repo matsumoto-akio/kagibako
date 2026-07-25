@@ -22,7 +22,13 @@ struct IdleView: View {
             VStack(alignment: .leading, spacing: 10) {
                 PromiseRow(icon: "wifi.slash", text: "外部に一切送信しません。全部このMacの中だけで動きます。")
                 PromiseRow(icon: "eye.slash", text: "キーの中身は画面にも出しません。先頭7文字と文字数だけです。")
-                PromiseRow(icon: "hand.raised", text: "読むだけです。ファイルを書き換えたり消したりしません。")
+                // shell_snapshots にゴミ箱ボタンを付けた以上、「消したりしません」は事実と違う。
+                // 例外を書かないと、後で削除ボタンを見たときに説明と食い違う。
+                PromiseRow(
+                    icon: "hand.raised",
+                    text: "読むだけです。ファイルの中身は書き換えません。"
+                        + "（Codexが自動で作るキャッシュだけ、あなたが押したときにゴミ箱へ移せます）"
+                )
             }
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
