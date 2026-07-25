@@ -41,7 +41,7 @@ struct ResultView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("調べ終わりました")
-                        .font(.caption.bold())
+                        .font(AppFont.smallBold)
                         .foregroundStyle(.secondary)
                     ResultHeadline(result: result)
                     if result.actNowFindingCount > 0 {
@@ -56,7 +56,7 @@ struct ResultView: View {
             HStack {
                 Button("全部まとめて見る") { isShowingEverything = true }
                     .buttonStyle(.link)
-                    .font(.caption)
+                    .font(AppFont.small)
                 Spacer()
                 summaryStepButton
             }
@@ -83,7 +83,7 @@ struct ResultView: View {
     private var filesStep: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("見つかったファイルと、その対処")
-                .font(.callout.bold())
+                .font(AppFont.bodyBold)
             KindSummaryChips(counts: result.kindCounts)
             FileListView(result: result, trashedPaths: trashedPaths, onTrash: onTrash)
             HStack {
@@ -102,7 +102,7 @@ struct ResultView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("参考")
-                        .font(.callout.bold())
+                        .font(AppFont.bodyBold)
                     ReferenceSection(result: result)
                     Divider()
                     NotesSection(result: result, trashFailure: trashFailure)
@@ -139,7 +139,7 @@ struct ResultView: View {
             if result.testFileCount > 0 || result.suspiciousCount > 0 {
                 Divider()
                 Text("参考")
-                    .font(.caption.bold())
+                    .font(AppFont.smallBold)
                     .foregroundStyle(.secondary)
                 ReferenceSection(result: result)
             }
@@ -148,7 +148,7 @@ struct ResultView: View {
             HStack {
                 Button("3ステップの表示に戻す") { isShowingEverything = false }
                     .buttonStyle(.link)
-                    .font(.caption)
+                    .font(AppFont.small)
                 Spacer()
                 Button("結果をコピー(値は含まれません)", action: onCopy)
                 Button("もう一度調べる", action: onRescan)

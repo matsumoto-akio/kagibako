@@ -20,7 +20,7 @@ struct ScanningView: View {
                 .monospacedDigit()
 
             Text(currentPath.isEmpty ? " " : currentPath)
-                .font(.caption)
+                .font(AppFont.small)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)

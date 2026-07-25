@@ -26,7 +26,7 @@ struct FileListView: View {
                         Image(systemName: icon(for: layer.risk))
                             .foregroundStyle(color(for: layer.risk))
                         Text("\(layer.risk.label)  \(layer.findingCount) 件 / \(layer.fileCount) ファイル")
-                            .font(.caption.bold())
+                            .font(AppFont.smallBold)
                     }
                 }
             }
@@ -65,11 +65,11 @@ struct FileListView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(group.displayPath)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(AppFont.mono)
                         .textSelection(.enabled)
                     if trashedPaths.contains(group.path) {
                         Text("ゴミ箱に移動済み")
-                            .font(.caption2)
+                            .font(AppFont.small)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(.quaternary, in: Capsule())
@@ -77,7 +77,7 @@ struct FileListView: View {
                 }
                 ForEach(Array(group.findings.enumerated()), id: \.offset) { _, finding in
                     Text("L\(finding.lineNumber)  \(finding.kind)  \(finding.masked)")
-                        .font(.caption)
+                        .font(AppFont.small)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -89,18 +89,18 @@ struct FileListView: View {
         let guidance = group.guidance
         return VStack(alignment: .leading, spacing: 8) {
             Text(guidance.title)
-                .font(.callout.bold())
+                .font(AppFont.bodyBold)
 
             if let reason = guidance.reason {
                 Text("なぜ危ないか: \(reason)")
-                    .font(.caption)
+                    .font(AppFont.small)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             ForEach(Array(guidance.steps.enumerated()), id: \.offset) { index, step in
                 Text("\(index + 1). \(step)")
-                    .font(.caption)
+                    .font(AppFont.small)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -111,14 +111,14 @@ struct FileListView: View {
 
             if let caution = guidance.caution {
                 Label(caution, systemImage: "exclamationmark.triangle")
-                    .font(.caption)
+                    .font(AppFont.small)
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             if group.isTrashable, !trashedPaths.contains(group.path) {
                 Button("このファイルをゴミ箱に入れる") { trashCandidate = group.path }
-                    .font(.caption)
+                    .font(AppFont.small)
             }
         }
         .padding(.vertical, 6)
@@ -136,7 +136,7 @@ struct FileListView: View {
             .padding(.top, 4)
         } label: {
             Label("詳しい人向け(ターミナルのコマンド)", systemImage: "terminal")
-                .font(.caption)
+                .font(AppFont.small)
                 .foregroundStyle(.secondary)
         }
     }
@@ -144,7 +144,7 @@ struct FileListView: View {
     private func commandRow(_ command: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text(command)
-                .font(.system(size: 11, design: .monospaced))
+                .font(AppFont.mono)
                 .textSelection(.enabled)
                 .padding(6)
                 .frame(maxWidth: .infinity, alignment: .leading)

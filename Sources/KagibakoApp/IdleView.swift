@@ -15,7 +15,7 @@ struct IdleView: View {
                 Text("カギバコ")
                     .font(.system(size: 30, weight: .bold))
                 Text("このMacの中に、そのまま置かれているAPIキーを数えます。")
-                    .font(.callout)
+                    .font(AppFont.body)
                     .foregroundStyle(.secondary)
             }
 
@@ -39,7 +39,7 @@ struct IdleView: View {
             .keyboardShortcut(.defaultAction)
 
             Text("だいたい1〜3分かかります。途中でやめても大丈夫です。")
-                .font(.caption)
+                .font(AppFont.small)
                 .foregroundStyle(.secondary)
 
             Spacer()
@@ -57,7 +57,7 @@ struct PromiseRow: View {
                 .frame(width: 20)
                 .foregroundStyle(.tint)
             Text(text)
-                .font(.callout)
+                .font(AppFont.body)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

@@ -54,7 +54,7 @@ struct FailureView: View {
             Text("調べられませんでした")
                 .font(.title2.bold())
             Text(message)
-                .font(.callout)
+                .font(AppFont.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("もう一度試す", action: onRetry)

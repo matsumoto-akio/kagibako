@@ -26,16 +26,16 @@ struct ResultHeadline: View {
                         .font(.title3.bold())
                 }
                 Text("\(result.actNowFileCount) ファイル。ほうっておくと勝手に増える場所と、ターミナルを開くたびに読み込まれる場所です。")
-                    .font(.callout)
+                    .font(AppFont.body)
                     .foregroundStyle(.secondary)
             }
             if !result.isClean {
                 Text("本物の可能性が高い検出は全部で \(result.findingCount) 件 / \(result.fileCount) ファイルです。")
-                    .font(.caption)
+                    .font(AppFont.small)
                     .foregroundStyle(.secondary)
             }
             Text("\(result.scannedFileCount) ファイルを確認しました。")
-                .font(.caption)
+                .font(AppFont.small)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -46,7 +46,7 @@ struct ResultHeadline: View {
 struct WhyItMattersBox: View {
     var body: some View {
         Text(Remediation.whyItMatters)
-            .font(.callout)
+            .font(AppFont.body)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
@@ -60,12 +60,12 @@ struct TodoSummaryBox: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("やることは3つです")
-                .font(.callout.bold())
+                .font(AppFont.bodyBold)
             step(1, "スナップショットをゴミ箱に入れる(このアプリのボタンから)")
             step(2, ".zshrc の export を消して、キーチェーンに移す")
             step(3, "プロジェクトの .env は .gitignore に入っているか確認する")
             Text("※ ファイルごとの詳しい手順は、次の画面で出ます")
-                .font(.caption)
+                .font(AppFont.small)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -76,10 +76,10 @@ struct TodoSummaryBox: View {
     private func step(_ number: Int, _ text: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text("\(number).")
-                .font(.callout.monospacedDigit())
+                .font(AppFont.bodyDigits)
                 .foregroundStyle(.secondary)
             Text(text)
-                .font(.callout)
+                .font(AppFont.body)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -89,7 +89,7 @@ struct TodoSummaryBox: View {
 struct NeverShowNoteBox: View {
     var body: some View {
         Label(Remediation.neverShowNote, systemImage: "eye.slash")
-            .font(.callout.bold())
+            .font(AppFont.bodyBold)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
@@ -105,7 +105,7 @@ struct KindSummaryChips: View {
             HStack(spacing: 8) {
                 ForEach(counts) { item in
                     Text("\(item.kind) \(item.count)")
-                        .font(.caption)
+                        .font(AppFont.small)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(.quaternary, in: Capsule())
@@ -128,7 +128,7 @@ struct ReferenceSection: View {
                     VStack(alignment: .leading, spacing: 3) {
                         ForEach(result.testGroups) { group in
                             Text("\(group.displayPath)  (\(group.findings.count))")
-                                .font(.system(size: 11, design: .monospaced))
+                                .font(AppFont.mono)
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)
                         }
@@ -139,7 +139,7 @@ struct ReferenceSection: View {
                         "テスト用・サンプルの可能性が高い: \(result.testFindingCount) 件 / \(result.testFileCount) ファイル",
                         systemImage: "flask"
                     )
-                    .font(.caption)
+                    .font(AppFont.small)
                 }
             }
 
@@ -148,13 +148,13 @@ struct ReferenceSection: View {
                     "誤検出の可能性が高い: \(result.suspiciousCount) 件 / \(result.suspiciousFileCount) ファイル(変数名からの推定のみ)",
                     systemImage: "questionmark.circle"
                 )
-                .font(.caption)
+                .font(AppFont.small)
                 .foregroundStyle(.secondary)
             }
 
             if result.testFileCount == 0, result.suspiciousCount == 0 {
                 Label("参考として出すものはありませんでした。", systemImage: "checkmark")
-                    .font(.caption)
+                    .font(AppFont.small)
                     .foregroundStyle(.secondary)
             }
         }
@@ -187,7 +187,7 @@ struct NotesSection: View {
                 )
             }
         }
-        .font(.caption)
+        .font(AppFont.small)
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)
