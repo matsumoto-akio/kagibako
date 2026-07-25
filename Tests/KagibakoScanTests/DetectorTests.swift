@@ -76,6 +76,39 @@ final class DetectorTests: XCTestCase {
         XCTAssertTrue(findings.isEmpty)
     }
 
+    /// `task-abstraction-...` の中の `sk-...` を拾ってしまう事故があった。
+    /// 単語の途中から始まる一致は、キーではなくただの英文。
+    func test_ignoresKeyLikeSubstringsInsideWords() throws {
+        // Arrange
+        let detector = try makeDetector()
+        let text = [
+            "foundations/task-abstraction-and-layering",
+            "'Asterisk-linking-protocol-exception'",
+            "モデルは huggingface_hf_abcdefghijklmnopqrstuvwxyz012345 ではない",
+        ].joined(separator: "\n")
+
+        // Act
+        let findings = detector.scan(text: text, path: "/tmp/doc.md")
+
+        // Assert
+        XCTAssertTrue(findings.isEmpty, "英文の一部を拾っています: \(findings.map(\.masked))")
+    }
+
+    func test_stillDetectsKeyAtStartOfLineAndAfterSeparators() throws {
+        // Arrange
+        let detector = try makeDetector()
+        let text = [
+            "sk-ant-api03-AbCdEfGhIjKlMnOpQrStUvWxYz0123456789",
+            "  \"key\": \"AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R\"",
+        ].joined(separator: "\n")
+
+        // Act
+        let findings = detector.scan(text: text, path: "/tmp/config.json")
+
+        // Assert
+        XCTAssertEqual(findings.count, 2)
+    }
+
     func test_prefersHighConfidenceOverGenericOnSameLine() throws {
         // Arrange
         let detector = try makeDetector()
@@ -106,6 +139,12 @@ final class ScanTargetsTests: XCTestCase {
     func test_skipsDependencyDirectories() {
         XCTAssertTrue(ScanTargets.shouldSkip(directoryName: "node_modules"))
         XCTAssertTrue(ScanTargets.shouldSkip(directoryName: "Library"))
+        XCTAssertTrue(ScanTargets.shouldSkip(directoryName: "site-packages"))
+        XCTAssertTrue(ScanTargets.shouldSkip(directoryName: "vendor"))
+        XCTAssertTrue(ScanTargets.shouldSkip(directoryName: ".venv"))
+        XCTAssertTrue(ScanTargets.shouldSkip(directoryName: "Pods"))
+        XCTAssertTrue(ScanTargets.shouldSkip(directoryName: "extensions"))
+        XCTAssertTrue(ScanTargets.shouldSkip(directoryName: ".tmp"))
         XCTAssertFalse(ScanTargets.shouldSkip(directoryName: "Developer"))
     }
 }

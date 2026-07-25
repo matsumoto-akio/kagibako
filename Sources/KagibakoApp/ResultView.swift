@@ -5,6 +5,8 @@ struct ResultView: View {
     let onCopy: () -> Void
     let onRescan: () -> Void
 
+    @State private var isShowingTestFiles = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             headline
@@ -12,6 +14,7 @@ struct ResultView: View {
                 kindSummary
                 fileList
             }
+            reference
             notes
             actions
         }
@@ -20,7 +23,7 @@ struct ResultView: View {
     private var headline: some View {
         VStack(alignment: .leading, spacing: 6) {
             if result.isClean {
-                Text("平文のAPIキーは見つかりませんでした")
+                Text("本物らしい平文のAPIキーは見つかりませんでした")
                     .font(.title2.bold())
                     .foregroundStyle(.green)
             } else {
@@ -57,28 +60,71 @@ struct ResultView: View {
 
     private var fileList: some View {
         List(result.groups) { group in
-            VStack(alignment: .leading, spacing: 4) {
-                Text(group.displayPath)
-                    .font(.system(size: 12, design: .monospaced))
-                    .textSelection(.enabled)
-                ForEach(Array(group.findings.enumerated()), id: \.offset) { _, finding in
-                    Text("L\(finding.lineNumber)  \(finding.kind)  \(finding.masked)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.vertical, 3)
+            fileRow(group)
         }
         .frame(minHeight: 200)
+    }
+
+    private func fileRow(_ group: ScanResult.FileGroup) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(group.displayPath)
+                .font(.system(size: 12, design: .monospaced))
+                .textSelection(.enabled)
+            ForEach(Array(group.findings.enumerated()), id: \.offset) { _, finding in
+                Text("L\(finding.lineNumber)  \(finding.kind)  \(finding.masked)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 3)
+    }
+
+    /// 参考枠。ここの数字は主役と混ぜない。混ぜると全体が信用されなくなるため。
+    @ViewBuilder
+    private var reference: some View {
+        if result.testFileCount > 0 || result.suspiciousCount > 0 {
+            VStack(alignment: .leading, spacing: 8) {
+                Divider()
+                Text("参考")
+                    .font(.caption.bold())
+                    .foregroundStyle(.secondary)
+
+                if result.testFileCount > 0 {
+                    DisclosureGroup(isExpanded: $isShowingTestFiles) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            ForEach(result.testGroups) { group in
+                                Text("\(group.displayPath)  (\(group.findings.count))")
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+                                    .textSelection(.enabled)
+                            }
+                        }
+                        .padding(.top, 4)
+                    } label: {
+                        Label(
+                            "テスト用・サンプルの可能性が高い: \(result.testFindingCount) 件 / \(result.testFileCount) ファイル",
+                            systemImage: "flask"
+                        )
+                        .font(.caption)
+                    }
+                }
+
+                if result.suspiciousCount > 0 {
+                    Label(
+                        "誤検出の可能性が高い: \(result.suspiciousCount) 件 / \(result.suspiciousFileCount) ファイル(変数名からの推定のみ)",
+                        systemImage: "questionmark.circle"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 
     private var notes: some View {
         VStack(alignment: .leading, spacing: 6) {
             if !result.isClean {
                 Label("直す前に、まず発行元でキーを再発行するのが安全です。", systemImage: "arrow.clockwise")
-            }
-            if result.suspiciousCount > 0 {
-                Label("ほかに疑わしい記述が \(result.suspiciousCount) 件ありました(誤検出を含みます)。", systemImage: "questionmark.circle")
             }
             if result.unreadableFileCount > 0 {
                 Label(

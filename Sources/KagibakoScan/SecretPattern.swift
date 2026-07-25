@@ -40,17 +40,24 @@ public struct SecretPattern: Sendable {
         try definitions.map { try SecretPattern(kind: $0.kind, confidence: $0.confidence, expression: $0.expression) }
     }
 
+    /// 単語の途中から始まる一致を禁じる先読み。
+    ///
+    /// これが無いと `task-abstraction-and-layering` の中の `sk-abstraction-...` を
+    /// OpenAIキーとして拾う(実測で9ファイルが誤検出になっていた)。
+    /// キーは必ず行頭・空白・記号の直後から始まる。
+    private static let wordStart = "(?<![A-Za-z0-9_])"
+
     private static let definitions: [(kind: String, confidence: Confidence, expression: String)] = [
-        ("Anthropic", .high, "sk-ant-[A-Za-z0-9_-]{20,}"),
-        ("OpenAI", .high, "sk-(?!ant-)(?:proj-)?[A-Za-z0-9_-]{20,}"),
-        ("Google", .high, "AIza[0-9A-Za-z_-]{35}"),
-        ("GitHub", .high, "gh[pousr]_[A-Za-z0-9]{36,}"),
-        ("GitHub(PAT)", .high, "github_pat_[A-Za-z0-9_]{50,}"),
-        ("Slack", .high, "xox[baprs]-[A-Za-z0-9-]{10,}"),
-        ("AWS", .high, "AKIA[0-9A-Z]{16}"),
-        ("Stripe(本番)", .high, "[sr]k_live_[A-Za-z0-9]{20,}"),
-        ("HuggingFace", .high, "hf_[A-Za-z0-9]{30,}"),
-        ("Google(OAuthシークレット)", .high, "GOCSPX-[A-Za-z0-9_-]{20,}"),
+        ("Anthropic", .high, wordStart + "sk-ant-[A-Za-z0-9_-]{20,}"),
+        ("OpenAI", .high, wordStart + "sk-(?!ant-)(?:proj-)?[A-Za-z0-9_-]{20,}"),
+        ("Google", .high, wordStart + "AIza[0-9A-Za-z_-]{35}"),
+        ("GitHub", .high, wordStart + "gh[pousr]_[A-Za-z0-9]{36,}"),
+        ("GitHub(PAT)", .high, wordStart + "github_pat_[A-Za-z0-9_]{50,}"),
+        ("Slack", .high, wordStart + "xox[baprs]-[A-Za-z0-9-]{10,}"),
+        ("AWS", .high, wordStart + "AKIA[0-9A-Z]{16}"),
+        ("Stripe(本番)", .high, wordStart + "[sr]k_live_[A-Za-z0-9]{20,}"),
+        ("HuggingFace", .high, wordStart + "hf_[A-Za-z0-9]{30,}"),
+        ("Google(OAuthシークレット)", .high, wordStart + "GOCSPX-[A-Za-z0-9_-]{20,}"),
         ("汎用(変数名から推定)", .low, "(?i)(?:api[_-]?key|secret|token|password|passwd)[\"']?\\s*[=:]\\s*[\"']?[A-Za-z0-9/+_-]{20,}"),
     ]
 }

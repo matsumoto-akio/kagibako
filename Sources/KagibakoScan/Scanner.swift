@@ -4,6 +4,31 @@ public struct ScanSummary: Sendable {
     public let findings: [Finding]
     public let scannedFileCount: Int
     public let unreadableFileCount: Int
+
+    public init(findings: [Finding], scannedFileCount: Int, unreadableFileCount: Int) {
+        self.findings = findings
+        self.scannedFileCount = scannedFileCount
+        self.unreadableFileCount = unreadableFileCount
+    }
+}
+
+/// 検出結果を3段階に分ける。CLIとアプリで同じ数字を出すため、
+/// 分け方はここ1箇所だけに置く。
+public extension ScanSummary {
+    /// 本物の可能性が高い。画面の主役にする数字。
+    var realFindings: [Finding] {
+        findings.filter { $0.confidence == .high && !$0.isLikelyTest }
+    }
+
+    /// テスト用・サンプルの可能性が高い。参考として別枠で出す。
+    var testFindings: [Finding] {
+        findings.filter { $0.confidence == .high && $0.isLikelyTest }
+    }
+
+    /// 変数名からの推定のみ。誤検出の可能性が高い。
+    var suspiciousFindings: [Finding] {
+        findings.filter { $0.confidence == .low }
+    }
 }
 
 /// ディレクトリを走査して Detector に食わせる層。

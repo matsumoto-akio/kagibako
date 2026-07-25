@@ -33,7 +33,8 @@ public struct Detector {
                 lineNumber: lineNumber,
                 kind: pattern.kind,
                 confidence: pattern.confidence,
-                masked: Masking.mask(matched)
+                masked: Masking.mask(matched),
+                isLikelyTest: TestArtifact.isLikelyTest(path: path, value: matched)
             )
         }
 

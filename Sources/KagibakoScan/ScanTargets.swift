@@ -12,6 +12,9 @@ public enum ScanTargets {
         "build", "target", "Applications", ".cache", ".npm", "vendor",
         "Movies", "Music", "Pictures", ".gradle", ".rustup", ".cargo",
         "site-packages", ".terraform",
+        // 自分で書いたものではない配置物。ここを見に行くと、他人のサンプルや
+        // ライセンス一覧を自分のキーとして数えてしまう(実測で11ファイル)。
+        "extensions", ".tmp",
     ]
 
     /// 拡張子が無い/特殊でも必ず見るファイル名。
