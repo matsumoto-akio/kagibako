@@ -135,4 +135,51 @@ final class RemediationTests: XCTestCase {
         XCTAssertTrue(Remediation.closingNote.contains("場所を教える"))
         XCTAssertTrue(Remediation.closingNote.contains("いますぐ対処"))
     }
+
+    /// 「平文で保存されます」では何が困るのか伝わらない。請求が来るところまで書く。
+    func test_whyItMattersIsWrittenAsConsequence() {
+        XCTAssertTrue(Remediation.whyItMatters.contains("クレジットカード"))
+        XCTAssertTrue(Remediation.whyItMatters.contains("請求"))
+    }
+
+    /// 一番多い漏れ方は、難しい攻撃ではなく写り込みと GitHub。
+    func test_neverShowNoteNamesTheCommonLeaks() {
+        XCTAssertTrue(Remediation.neverShowNote.contains("スクリーンショット"))
+        XCTAssertTrue(Remediation.neverShowNote.contains("GitHub"))
+    }
+
+    /// そもそも書く必要がない人が多い。金庫より先に「消すだけ」を出す。
+    func test_easiestOptionComesFirst() {
+        for kind in [LocationKind.shellConfig, .globalToolConfig] {
+            let first = Remediation.guidance(for: kind).steps.first ?? ""
+            XCTAssertTrue(first.contains("ログイン"), "\(kind) の最初の手順がログイン確認になっていません")
+            XCTAssertTrue(first.contains("消すだけ"), "\(kind) の最初の手順に「消すだけ」がありません")
+        }
+    }
+
+    /// コマンドが読めない層でも進めるように、画面操作の道を必ず用意する。
+    func test_keychainHasAGuiRoute() {
+        let steps = Remediation.guidance(for: .shellConfig).steps.joined()
+        XCTAssertTrue(steps.contains("キーチェーンアクセス"))
+    }
+
+    /// 用語は消さない(あとで自分で調べられなくなる)。残して、その場で注釈をつける。
+    func test_jargonKeepsItsNameAndGetsAnnotated() {
+        let annotations: [String: String] = [
+            "環境変数": "パソコン全体で使える設定",
+            "キーチェーン": "金庫",
+            ".zshrc": "ターミナルの設定ファイル",
+            ".gitignore": "GitHubに上げないファイルを指定する設定",
+        ]
+        for kind in LocationKind.allCases {
+            let guidance = Remediation.guidance(for: kind)
+            let text = ([guidance.title, guidance.reason ?? "", guidance.caution ?? ""] + guidance.steps).joined()
+            for (term, annotation) in annotations where text.contains(term) {
+                XCTAssertTrue(
+                    text.contains(annotation),
+                    "\(kind) が「\(term)」を注釈なしで使っています"
+                )
+            }
+        }
+    }
 }

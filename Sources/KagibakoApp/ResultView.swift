@@ -11,6 +11,7 @@ struct ResultView: View {
 
     @State private var isShowingTestFiles = false
     @State private var expandedPaths: Set<String> = []
+    @State private var expandedCommandPaths: Set<String> = []
     @State private var trashCandidate: String?
     @State private var didExpandFirstFile = false
 
@@ -18,6 +19,7 @@ struct ResultView: View {
         VStack(alignment: .leading, spacing: 16) {
             headline
             if result.actNowFindingCount > 0 {
+                whyItMatters
                 todoSummary
             }
             if !result.isClean {
@@ -26,33 +28,40 @@ struct ResultView: View {
             }
             reference
             notes
+            neverShowNote
             actions
         }
     }
 
+    /// 一番多い漏れ方は難しい攻撃ではない。0件の人にも最後に必ず見せる。
+    private var neverShowNote: some View {
+        Label(Remediation.neverShowNote, systemImage: "eye.slash")
+            .font(.callout.bold())
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    /// 0件の人には「何もしなくていい」とはっきり言う。
+    /// 曖昧に終わらせると、分からないまま不安だけが残る。
     private var headline: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if result.isClean {
-                Text("本物らしい平文のAPIキーは見つかりませんでした")
-                    .font(.title2.bold())
-                    .foregroundStyle(.green)
+            if result.actNowFindingCount == 0 {
+                allClearHeadline
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("\(result.actNowFindingCount)")
                         .font(.system(size: 46, weight: .bold, design: .rounded))
-                        .foregroundStyle(result.actNowFindingCount > 0 ? .orange : .green)
-                    Text(
-                        result.actNowFindingCount > 0
-                            ? "件は、いますぐ対処した方がいいキーです"
-                            : "件。いますぐ対処が要るものはありませんでした"
-                    )
-                    .font(.title3.bold())
+                        .foregroundStyle(.orange)
+                    Text("件は、いますぐ対処した方がいいキーです")
+                        .font(.title3.bold())
                 }
-                if result.actNowFindingCount > 0 {
-                    Text("\(result.actNowFileCount) ファイル。勝手に増える場所と、シェル全体に読み込まれる場所です。")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
+                Text("\(result.actNowFileCount) ファイル。ほうっておくと勝手に増える場所と、ターミナルを開くたびに読み込まれる場所です。")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            if !result.isClean {
                 Text("本物の可能性が高い検出は全部で \(result.findingCount) 件 / \(result.fileCount) ファイルです。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -61,6 +70,26 @@ struct ResultView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var allClearHeadline: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label("いますぐ対処した方がいいキーは見つかりませんでした", systemImage: "checkmark.circle.fill")
+                .font(.title2.bold())
+                .foregroundStyle(.green)
+            Text("このままで大丈夫です。何もしなくて構いません。")
+                .font(.title3)
+        }
+    }
+
+    /// 「平文で保存されます」だけでは、何が困るのか伝わらない。
+    private var whyItMatters: some View {
+        Text(Remediation.whyItMatters)
+            .font(.callout)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
     }
 
     /// 件数だけ出して手順をファイルの中に隠すと、次に何をすればいいか分からない。
@@ -183,8 +212,8 @@ struct ResultView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            ForEach(Array(guidance.commands.enumerated()), id: \.offset) { _, command in
-                commandRow(command)
+            if !guidance.commands.isEmpty {
+                expertCommands(guidance.commands, path: group.path)
             }
 
             if let caution = guidance.caution {
@@ -201,6 +230,22 @@ struct ResultView: View {
         }
         .padding(.vertical, 6)
         .padding(.leading, 4)
+    }
+
+    /// コマンドは最後の手段。読めない人が手順の途中で止まらないよう、畳んでおく。
+    private func expertCommands(_ commands: [String], path: String) -> some View {
+        DisclosureGroup(isExpanded: commandExpansion(of: path)) {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(commands.enumerated()), id: \.offset) { _, command in
+                    commandRow(command)
+                }
+            }
+            .padding(.top, 4)
+        } label: {
+            Label("詳しい人向け(ターミナルのコマンド)", systemImage: "terminal")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func commandRow(_ command: String) -> some View {
@@ -321,6 +366,19 @@ struct ResultView: View {
                     expandedPaths.insert(path)
                 } else {
                     expandedPaths.remove(path)
+                }
+            }
+        )
+    }
+
+    private func commandExpansion(of path: String) -> Binding<Bool> {
+        Binding(
+            get: { expandedCommandPaths.contains(path) },
+            set: { isExpanded in
+                if isExpanded {
+                    expandedCommandPaths.insert(path)
+                } else {
+                    expandedCommandPaths.remove(path)
                 }
             }
         )

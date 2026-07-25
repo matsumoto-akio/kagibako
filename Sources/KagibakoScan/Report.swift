@@ -29,6 +29,7 @@ public enum Report {
 
         let sections = [
             header,
+            actNow.isEmpty ? "" : Remediation.whyItMatters,
             byKindSection(real),
             riskSections(summary),
             referenceSection("【参考: テスト用・サンプルの可能性が高い】", test),
@@ -91,12 +92,19 @@ public enum Report {
 
     private static func footer(_ realCount: Int) -> String {
         guard realCount > 0 else {
-            return "本物の可能性が高い平文キーは見つかりませんでした。"
+            return """
+            いますぐ対処した方がいいキーは見つかりませんでした。
+            このままで大丈夫です。何もしなくて構いません。
+
+            \(Remediation.neverShowNote)
+            """
         }
         return """
         ───────────────────────────────────────────
         値そのものは表示していません(この出力を人に見せても安全です)。
         該当ファイルを直す前に、まず発行元でキーを再発行するのが安全です。
+
+        \(Remediation.neverShowNote)
 
         \(Remediation.closingNote)
         ───────────────────────────────────────────
