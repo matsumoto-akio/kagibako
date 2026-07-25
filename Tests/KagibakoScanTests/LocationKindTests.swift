@@ -155,11 +155,35 @@ final class RemediationTests: XCTestCase {
         for kind in [LocationKind.shellConfig, .globalToolConfig] {
             let first = Remediation.guidance(for: kind).steps.first ?? ""
             XCTAssertTrue(first.contains("ログイン"), "\(kind) の最初の手順がログイン確認になっていません")
-            XCTAssertTrue(
-                first.contains("分からない場合は消さないでください"),
-                "\(kind) の最初の手順に「分からない場合は消さない」がありません"
-            )
         }
+    }
+
+    /// 分からない人に「試しに消して動かしてみる」をさせない。
+    /// 何を動かせばいいか分からないから分からないのであって、確かめようがない。
+    func test_unknownToolIsToldToLeaveTheFileAlone() {
+        for kind in [LocationKind.shellConfig, .globalToolConfig] {
+            let steps = Remediation.guidance(for: kind).steps
+            let stopIndex = steps.firstIndex { $0.contains("そのファイルは触らないでください") }
+            XCTAssertNotNil(stopIndex, "\(kind) に「分からないなら触らない」の受け皿がありません")
+
+            guard let stopIndex else { continue }
+            XCTAssertTrue(
+                steps[stopIndex].contains("GitHub"),
+                "\(kind) の受け皿に、確認する1点(GitHub)がありません"
+            )
+            let deleteIndex = steps.firstIndex { $0.contains("削除") }
+            if let deleteIndex {
+                XCTAssertLessThan(stopIndex, deleteIndex, "\(kind) の受け皿が削除手順より後にあります")
+            }
+        }
+    }
+
+    /// 「そのままでよい」層なのに手順だけ読むと直す必要があるように見える。層の名前で言い切る。
+    func test_projectEnvSaysItIsInTheLikelyFineLayer() {
+        let steps = Remediation.guidance(for: .projectEnv, path: "/Users/tester/proj/.env").steps
+        let first = steps.first ?? ""
+        XCTAssertTrue(first.contains(Risk.likelyFine.label), "projectEnv が「\(Risk.likelyFine.label)」だと言っていません")
+        XCTAssertTrue(first.contains("必要はありません"), "projectEnv が、移す/消す必要がないと言い切っていません")
     }
 
     /// 別のツールの設定ファイルを「消すだけで終わり」と言うと、そのツールが動かなくなる。
