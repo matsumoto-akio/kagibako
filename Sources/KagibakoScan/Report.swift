@@ -70,7 +70,7 @@ public enum Report {
         let rows = byFile.flatMap { entry -> [String] in
             let lines = entry.items.map { "      L\($0.lineNumber)  \($0.kind)  \($0.masked)" }
             let guidance = Remediation.guidance(for: LocationKind.of(path: entry.path), path: entry.path)
-            return ["  \(entry.path)"] + lines + ["      → \(guidance.title)"]
+            return ["  \(PathDisplay.abbreviate(entry.path))"] + lines + ["      → \(guidance.title)"]
         }
         return ([title] + rows).joined(separator: "\n")
     }
@@ -82,7 +82,7 @@ public enum Report {
             .map { (path: $0.key, count: $0.value.count) }
             .sorted { $0.count > $1.count }
         let shown = byFile.prefix(referenceFileLimit)
-        let rows = shown.map { "  \($0.path)  (\($0.count))" }
+        let rows = shown.map { "  \(PathDisplay.abbreviate($0.path))  (\($0.count))" }
         let omitted = byFile.count - shown.count
         let note = omitted > 0 ? ["  ほか \(omitted) ファイル"] : []
         return ([title] + rows + note).joined(separator: "\n")
