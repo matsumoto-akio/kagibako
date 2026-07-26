@@ -58,6 +58,8 @@ Anthropic / OpenAI / OpenRouter / Google / GitHub / Slack / AWS / Stripe / Huggi
 
 ## 数え方 —— `grep` と何が違うか
 
+> この節が分類定義の正本。見た目の指定は DESIGN.md §8.4。
+
 `grep -r "sk-" ~` でも、それらしい行は出ます。でも出てきた数字はそのままでは使えません。
 テスト用のダミーキー、ドキュメントの見本、さらには英文の一部
 (`task-abstraction-and-layering` の中の `sk-abstraction-...`)まで混ざるからです。
