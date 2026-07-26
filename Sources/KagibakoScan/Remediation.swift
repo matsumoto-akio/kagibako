@@ -89,29 +89,36 @@ public enum Remediation {
         + "そのコピーにもキーが書かれています。うまくいったら、コピーの方も消してください。"
 
     public static func guidance(for kind: LocationKind, path: String? = nil) -> Guidance {
-        let file = path ?? "<このファイル>"
-        let directory = path.map { ($0 as NSString).deletingLastPathComponent } ?? "<プロジェクトのフォルダ>"
+        // 文章は `~` 表記、コマンドは貼り付けて動く形。同じパスでも別物になる。
+        let file = path.map { PathDisplay.abbreviate($0) } ?? "<このファイル>"
+        let fileArg = path.map { PathDisplay.shellArgument($0) } ?? "\"<このファイル>\""
+        // 引用符の外に `.bak` を足すと `~/".zshrc".bak` になる。動きはするが読みにくいので、
+        // 退避先は元のパスに `.bak` を付けてから組み立てる。
+        let backupArg = path.map { PathDisplay.shellArgument($0 + ".bak") } ?? "\"<このファイル>.bak\""
+        let directoryPath = path.map { ($0 as NSString).deletingLastPathComponent }
+        let directoryArg = directoryPath.map { PathDisplay.shellArgument($0) }
+            ?? "\"<プロジェクトのフォルダ>\""
         let name = path.map { ($0 as NSString).lastPathComponent } ?? ".env"
 
         switch kind {
         case .shellSnapshot:
-            return snapshotGuidance(file: file)
+            return snapshotGuidance(file: file, fileArg: fileArg)
         case .shellConfig:
-            return shellConfigGuidance(file: file)
+            return shellConfigGuidance(file: file, fileArg: fileArg, backupArg: backupArg)
         case .globalToolConfig:
-            return globalToolConfigGuidance(file: file)
+            return globalToolConfigGuidance(file: file, fileArg: fileArg, backupArg: backupArg)
         case .authFile:
-            return authFileGuidance(file: file, directory: directory, name: name)
+            return authFileGuidance(file: file, fileArg: fileArg, directoryArg: directoryArg, name: name)
         case .looseEnv:
-            return looseEnvGuidance(directory: directory, name: name)
+            return looseEnvGuidance(directoryArg: directoryArg, name: name)
         case .projectEnv:
-            return projectEnvGuidance(directory: directory, name: name)
+            return projectEnvGuidance(directoryArg: directoryArg, name: name)
         case .other:
-            return otherGuidance(file: file, directory: directory, name: name)
+            return otherGuidance(file: file, fileArg: fileArg, directoryArg: directoryArg, name: name)
         }
     }
 
-    private static func snapshotGuidance(file: String) -> Guidance {
+    private static func snapshotGuidance(file: String, fileArg: String) -> Guidance {
         Guidance(
             title: "消してよいコピーです",
             reason: "Codex が起動するたびに自動で作るコピーです。"
@@ -125,13 +132,13 @@ public enum Remediation {
                     + "(~/.zshrc。ターミナルの設定ファイルで、ターミナルを開くたびに読み込まれます)"
                     + "にキーが書いてあるせいなので、そちらもセットで直してください。",
             ],
-            commands: ["rm \"\(file)\""],
+            commands: ["rm \(fileArg)"],
             caution: "削除しても Codex の起動で再生成されます。"
                 + "根本を直すにはターミナルの設定ファイルの修正が必要です。"
         )
     }
 
-    private static func shellConfigGuidance(file: String) -> Guidance {
+    private static func shellConfigGuidance(file: String, fileArg: String, backupArg: String) -> Guidance {
         Guidance(
             title: "書いた1行を消すのが一番かんたんです",
             reason: "~/.zshrc(ターミナルの設定ファイル。ターミナルを開くたびに読み込まれます)に書いた値は、"
@@ -159,7 +166,7 @@ public enum Remediation {
                     + "\(reissueOrderCaution)",
             ],
             commands: [
-                "cp \"\(file)\" \"\(file).bak\"",
+                "cp \(fileArg) \(backupArg)",
                 "security add-generic-password -a \"$USER\" -s ANTHROPIC_API_KEY -w",
                 "security find-generic-password -a \"$USER\" -s ANTHROPIC_API_KEY -w",
             ],
@@ -169,7 +176,7 @@ public enum Remediation {
         )
     }
 
-    private static func globalToolConfigGuidance(file: String) -> Guidance {
+    private static func globalToolConfigGuidance(file: String, fileArg: String, backupArg: String) -> Guidance {
         Guidance(
             title: "設定から消して、ツール側で入れ直してください",
             reason: "ツール全体の設定ファイルです。どのフォルダで作業しても読み込まれるので、"
@@ -186,13 +193,13 @@ public enum Remediation {
                     + "(下の「詳しい人向け」のコマンド)。",
             ],
             commands: [
-                "cp \"\(file)\" \"\(file).bak\"",
-                "chmod 600 \"\(file)\"",
+                "cp \(fileArg) \(backupArg)",
+                "chmod 600 \(fileArg)",
             ]
         )
     }
 
-    private static func authFileGuidance(file: String, directory: String, name: String) -> Guidance {
+    private static func authFileGuidance(file: String, fileArg: String, directoryArg: String, name: String) -> Guidance {
         Guidance(
             title: "使っているかどうかで分かれます",
             reason: "アプリがあなたの代わりにログインするための鍵が入ったファイルです。"
@@ -206,13 +213,13 @@ public enum Remediation {
                     + ".gitignore(GitHubに上げないファイルを指定する設定)に入っていれば大丈夫です。",
             ],
             commands: [
-                "git -C \"\(directory)\" check-ignore -v \"\(name)\"",
-                "chmod 600 \"\(file)\"",
+                "git -C \(directoryArg) check-ignore -v \"\(name)\"",
+                "chmod 600 \(fileArg)",
             ]
         )
     }
 
-    private static func looseEnvGuidance(directory: String, name: String) -> Guidance {
+    private static func looseEnvGuidance(directoryArg: String, name: String) -> Guidance {
         Guidance(
             title: "置き場所を決め直してください",
             reason: "ホームや書類フォルダの直下にある .env は、どのプロジェクトのものか分からなくなり、"
@@ -224,11 +231,11 @@ public enum Remediation {
                 "いま使っているプロジェクトのフォルダの中に移すのが安全です。"
                     + "心当たりがなければ、中身を見たうえで削除してください。",
             ],
-            commands: ["git -C \"\(directory)\" check-ignore -v \"\(name)\""]
+            commands: ["git -C \(directoryArg) check-ignore -v \"\(name)\""]
         )
     }
 
-    private static func projectEnvGuidance(directory: String, name: String) -> Guidance {
+    private static func projectEnvGuidance(directoryArg: String, name: String) -> Guidance {
         Guidance(
             title: "通常はこのままで問題ありません",
             steps: [
@@ -243,13 +250,13 @@ public enum Remediation {
                     + "心当たりがあれば、キーを作り直してください。",
             ],
             commands: [
-                "git -C \"\(directory)\" check-ignore -v \"\(name)\"",
-                "git -C \"\(directory)\" log --oneline -- \"\(name)\"",
+                "git -C \(directoryArg) check-ignore -v \"\(name)\"",
+                "git -C \(directoryArg) log --oneline -- \"\(name)\"",
             ]
         )
     }
 
-    private static func otherGuidance(file: String, directory: String, name: String) -> Guidance {
+    private static func otherGuidance(file: String, fileArg: String, directoryArg: String, name: String) -> Guidance {
         Guidance(
             title: "中身を見て判断してください",
             steps: [
@@ -261,8 +268,8 @@ public enum Remediation {
                     + "自分だけが読める設定にしてください(下の「詳しい人向け」のコマンド)。",
             ],
             commands: [
-                "git -C \"\(directory)\" check-ignore -v \"\(name)\"",
-                "chmod 600 \"\(file)\"",
+                "git -C \(directoryArg) check-ignore -v \"\(name)\"",
+                "chmod 600 \(fileArg)",
             ]
         )
     }

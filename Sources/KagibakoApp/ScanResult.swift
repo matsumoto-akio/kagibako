@@ -98,9 +98,6 @@ struct ScanResult {
     }
 
     /// ホームディレクトリを `~` に畳む。スクショを人に見せても個人名が出ないようにするため。
-    static func abbreviate(_ path: String) -> String {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        guard path.hasPrefix(home) else { return path }
-        return "~" + path.dropFirst(home.count)
-    }
+    /// 手順とコマンド欄も同じ表記にそろえるため、実体は `PathDisplay` に置いてある。
+    static func abbreviate(_ path: String) -> String { PathDisplay.abbreviate(path) }
 }
